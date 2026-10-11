@@ -706,9 +706,20 @@ void vi_wait_vblank(void)
         // We define the vblank as the 0->2 current line transition. We can't
         // just check if line 2 is current (VI_V_CURRENT_VBLANK) because it
         // would cause multiple subsequent calls not to wait the next vblank.
+        //
+        // Compare lines instead of polling for exact ones: the VI interrupt
+        // fires on line 2, so if its handlers run past line 2 an exact poll
+        // misses it and waits another frame, or forever on a deterministic
+        // emulator. Instead, unless the current field has not reached line 2
+        // yet, wait for the line counter to go backwards (a new field), then
+        // for line 2 or later.
         ACCT_SCOPE(ACCT_CAT_VI) {
-            while (vi_get_scanline(NULL) != VI_V_CURRENT_VBLANK-2) {}
-            while (vi_get_scanline(NULL) != VI_V_CURRENT_VBLANK) {}
+            uint32_t prev = 0, line = vi_get_scanline(NULL);
+            while (line >= VI_V_CURRENT_VBLANK && line >= prev) {
+                prev = line;
+                line = vi_get_scanline(NULL);
+            }
+            while (vi_get_scanline(NULL) < VI_V_CURRENT_VBLANK) {}
 
             // To support operating the VI with interrupts disabled, manually call
             // our vblank handler here
