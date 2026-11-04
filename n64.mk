@@ -187,6 +187,7 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.S
 		TEXTSECTION="$(basename $@).text"; \
 		DATASECTION="$(basename $@).data"; \
 		METASECTION="$(basename $@).meta"; \
+		ABIOBJ="$(basename $@).abi.o"; \
 		BINARY="$(basename $@).elf"; \
 		echo "    [RSP] $<"; \
 		$(N64_CC) $(RSPASFLAGS) -L$(N64_LIBDIR) -nostartfiles -Wl,-Trsp.ld -Wl,--gc-sections  -Wl,-Map=$(BUILD_DIR)/$(notdir $(basename $@)).map,--cref -o $@ $<; \
@@ -214,8 +215,9 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.S
 				--set-section-alignment .data=16 \
 				--rename-section .text=.data $$METASECTION.bin $$METASECTION.o; \
 		$(N64_SIZE) -G $$BINARY; \
-		$(N64_LD) -relocatable $$TEXTSECTION.o $$DATASECTION.o $$METASECTION.o -o $@; \
-		rm $$TEXTSECTION.bin $$DATASECTION.bin $$METASECTION.bin $$TEXTSECTION.o $$DATASECTION.o $$METASECTION.o; \
+		$(N64_CC) -c $(N64_ASFLAGS) -x assembler /dev/null -o $$ABIOBJ; \
+		$(N64_LD) -relocatable $$ABIOBJ $$TEXTSECTION.o $$DATASECTION.o $$METASECTION.o -o $@; \
+		rm $$TEXTSECTION.bin $$DATASECTION.bin $$METASECTION.bin $$TEXTSECTION.o $$DATASECTION.o $$METASECTION.o $$ABIOBJ; \
 	else \
 		echo "    [AS] $<"; \
 		$(CC) -c $(ASFLAGS) -o $@ $<; \
