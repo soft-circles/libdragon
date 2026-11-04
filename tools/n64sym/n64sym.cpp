@@ -384,13 +384,14 @@ static bool disasm_get_fields(const char *line, char **mnemonic_out, char **oper
     *mnemonic_out = NULL;
     *operands_out = NULL;
 
-    // Keep parsing simple: split objdump line by tabs and take fields.
-    // Format is usually: ADDR: \t ENCODING \t MNEMONIC \t OPERANDS
+    // Keep parsing simple: split objdump line at the address colon, then by tabs.
+    // GNU objdump prints ADDR: \t ENCODING \t MNEMONIC \t OPERANDS, and llvm-objdump
+    // prints ADDR: ENCODING \t MNEMONIC \t OPERANDS, with spaces before the encoding.
     char *tmp = strdup(line);
     if (!tmp) return false;
 
     char *saveptr = NULL;
-    char *f_addr = strtok_r(tmp, "\t", &saveptr);
+    char *f_addr = strtok_r(tmp, ":", &saveptr);
     char *f_encoding = strtok_r(NULL, "\t", &saveptr);
     char *f_mnemonic = strtok_r(NULL, "\t", &saveptr);
     char *f_operands = strtok_r(NULL, "\t", &saveptr);
